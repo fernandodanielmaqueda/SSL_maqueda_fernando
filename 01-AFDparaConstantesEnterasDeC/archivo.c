@@ -35,6 +35,8 @@ Las consultas podrán ser respondidas a través Discord. Es importante que los u
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+#include <memory.h>
 #include <errno.h>
 
 FILE* abrirArchivo(char*,char*);
@@ -67,6 +69,7 @@ int main()
         {
             putchar(caracter);
             fputc(caracter,archivoSalida);
+
             switch(estadoActual)
             {
                 case Q0:
@@ -101,7 +104,7 @@ int main()
                     switch(caracter)
                     {
                         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-                            estadoActual = Q2;
+                            //estadoActual = Q2;
                         break;
                         default:
                             estadoActual = Q6;
@@ -123,7 +126,7 @@ int main()
                     switch(caracter)
                     {
                         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': case 'A': case 'a': case 'B': case 'b': case 'C': case 'c': case 'D': case 'd': case 'E': case 'e': case 'F': case 'f':
-                            estadoActual = Q4;
+                            //estadoActual = Q4;
                         break;
                         default:
                             estadoActual = Q6;
@@ -134,7 +137,7 @@ int main()
                     switch(caracter)
                     {
                         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
-                            estadoActual = Q5;
+                            //estadoActual = Q5;
                         break;
                         default:
                             estadoActual = Q6;
@@ -180,13 +183,18 @@ int main()
     return 0;
 }
 
-FILE* abrirArchivo(char* nombre, char* modo)
+FILE* abrirArchivo(char* nombreArchivo, char* modo)
 {
-    FILE* archivo = fopen(nombre, modo);
+    FILE* archivo = fopen(nombreArchivo, modo);
 
     if (errno != 0)
     {
-        perror("Error al abrir el archivo");
+        char* tipoError = "Error al abrir el archivo ";
+        char* mensajeError = (char*) malloc(1 + sizeof(char*) * (strlen(nombreArchivo) + strlen(tipoError)));
+        strcpy(mensajeError, tipoError);
+        strcat(mensajeError, nombreArchivo);
+        perror(mensajeError);
+        system("pause");
         exit(1);
     }
 
