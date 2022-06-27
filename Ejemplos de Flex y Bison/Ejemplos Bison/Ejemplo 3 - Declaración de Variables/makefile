@@ -64,42 +64,43 @@ all: $(BINS)
 # Para "limpiar" (eliminar) todos los objetos generados
 clean:
 	@echo ""
-	@echo "=================[ Eliminar todo lo generado al compilar ]================="
+	@echo "<<< Eliminando el directorio $(OBJDIR) recursivamente si existiera >>> "
+	rm -rf $(OBJDIR)
+	@echo "<<< Directorio $(OBJDIR) eliminado recursivamente. >>> "
 	@echo ""
-	@echo "<<< Eliminando archivo/s: $(BINS) >>> "
-	rm -f $(BINS)
-	@echo "<<< Archivo/s $(BINS) eliminado/s. >>> "
+	@echo "<<< Eliminando todos los archivos *.$(BINSEXT) en el directorio $(BINDIR) si existiera >>> "
+	rm -rf $(BINDIR)/*.$(BINSEXT)
+	@echo "<<< Archivos $(BINDIR)/*.$(BINSEXT) eliminados. >>> "
 	@echo ""
-	@echo "<<< Eliminando archivo/s: $(COBJS) $(foreach BIN,$(BINS),$(BIN:$(BINDIR)/%.$(BINSEXT)=$(OBJDIR)/%.*)) >>> "
-	rm -f $(COBJS) $(foreach BIN,$(BINS),$(BIN:$(BINDIR)/%.$(BINSEXT)=$(OBJDIR)/%.*))
-	@echo "<<< Archivo/s $(COBJS) $(foreach BIN,$(BINS),$(BIN:$(BINDIR)/%.$(BINSEXT)=$(OBJDIR)/%.*)) eliminado/s. >>> "
-	@echo ""
-	@echo "<<< Eliminando los directorios $(BINDIR) y $(OBJDIR) si existieran y estuvieran vacios >>> "
+	@echo "<<< Eliminando el directorio $(BINDIR) si existiera y estuviera vacio >>> "
 	if [ -d "$(BINDIR)" ]; then rmdir --ignore-fail-on-non-empty $(BINDIR); fi
-	if [ -d "$(OBJDIR)" ]; then rmdir --ignore-fail-on-non-empty $(OBJDIR); fi
-	@echo "<<< Directorios $(BINDIR) y $(OBJDIR) eliminados en caso de haber estado vacios. >>> "
-	@echo ""
-	@echo "=================[ Completado ]============="
+	@echo "<<< Directorio $(BINDIR) eliminado en caso de haber estado vacio. >>> "
 
 # Para agregar el flag de debug a YACC
 debug: YFLAGS += --debug
 # Para agregar el flag de debug a LEX
 debug: LFLAGS += -d
-# Para agregar los flags de debug a CC haya o no haya YACC
-debug: CFLAGS += -DDEBUG -g
-# Para agregar los flags de debug a CC sólo cuando haya YACC
-debug: CFLAGS4Y += -DBISON_DEBUG
-# Primero hace un make clean y luego un make all con todos los nuevos valores asignados a las variables de arriba
+# Para agregar el flag de debug para YACC a CC
+debug: CFLAGS4Y += -DBISON_DEBUG -DDEBUG -g
+# Para "debuggear" YACC y LEX
 debug: clean all
 	
 # Para crear reglas que no generen objetos de ese mismo nombre
 .PHONY: all clean debug
 
-# Para que no elimine los archivos secundarios (aquellos que son creados por regla prerequisito de otra regla) una vez buildeado
-.SECONDARY: $(BINS) $(COBJS) $(YOBJS) $(YOBJS:%.o=%.c) $(YOBJS:%.o=%.h) $(YOBJS:%.tab.o=%.output) $(LOBJS:%.yy.o=%.lex+yacc.yy.o) $(LOBJS:%.yy.o=%.lex+yacc.yy.c) $(LOBJS:%.yy.o=%.lex.yy.o) $(LOBJS:%.yy.o=%.lex.yy.c)
+# Para YACC + LEX + CC: Para buildear el binario
+$(BINDIR)/%.$(BINSEXT): $(SRCDIR)/%.l $(SRCDIR)/%.y $(OBJDIR) $(BINDIR) $(COBJS) $(OBJDIR)/%.tab.o $(OBJDIR)/%.lex+yacc.yy.o
+	@echo ""
+	@echo "<<< Build $(YACC)+$(LEX)+$(CC): Compilando y enlazando todo con libfl.a y liby.a >>>"
+	$(CC) $(CFLAGS) $(CFLAGS4Y) $(filter %.o, $^) $(LIBS) -o $@
+	@echo "<<< Archivo $@ buildeado. >>>"
 
-# Para cada binario: verifica que su archivo $(SRCDIR)/%.l exista, crea los directorios si no existen, anuncia que se va a buildear, lo buildea y por último muestra que se completó 
-$(BINDIR)/%.$(BINSEXT): $(SRCDIR)/%.l $(OBJDIR) $(BINDIR) $(OBJDIR)/%.build.temp $(OBJDIR)/%.bin.temp $(OBJDIR)/%.done.temp ;
+# Para LEX + CC: Para buildear el binario
+$(BINDIR)/%.$(BINSEXT): $(SRCDIR)/%.l $(OBJDIR) $(BINDIR) $(COBJS) $(OBJDIR)/%.lex.yy.o
+	@echo ""
+	@echo "<<< Build $(LEX)+$(CC): Compilando y enlazando todo con libfl.a >>>"
+	$(CC) $(CFLAGS) $(filter %.o, $^) $(LIBS) -o $@
+	@echo "<<< Archivo $@ buildeado. >>>"
 
 # Para crear los directorios si no existieran
 $(OBJDIR) $(BINDIR):
@@ -107,59 +108,30 @@ $(OBJDIR) $(BINDIR):
 	@echo "<<< Creando el directorio $@ >>>"
 	mkdir -p $@
 	@echo "<<< Directorio $@ creado. >>>"
-
-# Para YACC + LEX + CC: Para anunciar que se va a iniciar el build
-$(OBJDIR)/%.build.temp: $(SRCDIR)/%.l $(SRCDIR)/%.y
-	@echo ""
-	@echo "=================[ Build con $(YACC)+$(LEX)+$(CC): $(@:$(OBJDIR)/%.build.temp=$(BINDIR)/%.$(BINSEXT)) ]================="
-
-# Para LEX + CC: Para anunciar que se va a iniciar el build
-$(OBJDIR)/%.build.temp: $(SRCDIR)/%.l
-	@echo ""
-	@echo "=================[ Build con $(LEX)+$(CC): $(@:$(OBJDIR)/%.build.temp=$(BINDIR)/%.$(BINSEXT)) ]================="
-
-# Para YACC + LEX + CC: Para buildear el binario
-$(OBJDIR)/%.bin.temp: $(SRCDIR)/%.l $(SRCDIR)/%.y $(OBJDIR)/%.build.temp $(COBJS) $(OBJDIR)/%.tab.o $(OBJDIR)/%.lex+yacc.yy.o
-	@echo ""
-	@echo "<<< Build $(YACC)+$(LEX)+$(CC): Compilando y enlazando todo con libfl.a y liby.a >>>"
-	$(CC) $(CFLAGS) $(CFLAGS4Y) $(filter %.o, $^) $(LIBS) -o $(@:$(OBJDIR)/%.bin.temp=$(BINDIR)/%.$(BINSEXT))
-	@echo "<<< Archivo $(@:$(OBJDIR)/%.bin.temp=$(BINDIR)/%.$(BINSEXT)) buildeado. >>>"
-
-# Para LEX + CC: Para buildear el binario
-$(OBJDIR)/%.bin.temp: $(SRCDIR)/%.l $(OBJDIR)/%.build.temp $(COBJS) $(OBJDIR)/%.lex.yy.o
-	@echo ""
-	@echo "<<< Build $(LEX)+$(CC): Compilando y enlazando todo con libfl.a >>>"
-	$(CC) $(CFLAGS) $(filter %.o, $^) $(LIBS) -o $(@:$(OBJDIR)/%.bin.temp=$(BINDIR)/%.$(BINSEXT))
-	@echo "<<< Archivo $(@:$(OBJDIR)/%.bin.temp=$(BINDIR)/%.$(BINSEXT)) buildeado. >>>"
 	
-# Para anunciar que se completó el build
-$(OBJDIR)/%.done.temp: $(OBJDIR)/%.build.temp $(OBJDIR)/%.bin.temp
-	@echo ""
-	@echo "=================[ Completado ]================="
+# Para que no elimine los archivos secundarios (aquellos que son creados por regla prerequisito de otra regla) una vez buildeado
+.SECONDARY: $(COBJS) $(YOBJS) $(YOBJS:%.o=%.c) $(LOBJS:%.yy.o=%.lex+yacc.yy.o) $(LOBJS:%.yy.o=%.lex+yacc.yy.c) $(LOBJS:%.yy.o=%.lex.yy.o) $(LOBJS:%.yy.o=%.lex.yy.c)
 
-# Para CC: Para generar los objetos desde $(SRCDIR)/%.c con sus dependencias $(SRCDIR)/*.h)
-$(OBJDIR)/%.o: $(SRCDIR)/%.c $(wildcard $(SRCDIR)/*.h)
+# Para CC: Para generar los objetos desde $(SRCDIR)/%.c
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@echo ""
 	@echo "<<< $(CC): Generando el archivo intermedio $@ >>>"
 	$(CC) $(CFLAGS) -c -o "$@" $<
 	@echo "<<< Archivo intermedio $@ generado. >>>"
 
-# Para YACC + CC: Para generar los objetos desde $(OBJDIR)/%.tab.c con sus $(OBJDIR)/%.tab.h $(OBJDIR)/%.tab.output
+# Para YACC + CC: Para generar los objetos desde $(OBJDIR)/%.tab.c
 $(OBJDIR)/%.tab.o: $(OBJDIR)/%.tab.c
 	@echo ""
 	@echo "<<< $(YACC)+$(CC): Generando el archivo intermedio $@ >>>"
 	$(CC) $(CFLAGS) -c -o "$@" $<
 	@echo "<<< Archivo intermedio $@ generado. >>>"
 
-# Para producir una dependencia en el makefile entre el archivo $(OBJDIR)/%.tab.c con su $(OBJDIR)/%.tab.h
-$(OBJDIR)/%.tab.c: $(OBJDIR)/%.tab.h ;
-	
 # Para YACC: Para generar el archivo $(OBJDIR)/%.tab.c (junto a $(OBJDIR)/%.tab.h y $(OBJDIR)/%.tab.output) desde $(SRCDIR)/%.y
-$(OBJDIR)/%.tab.h: $(SRCDIR)/%.y
+$(OBJDIR)/%.tab.c: $(SRCDIR)/%.y
 	@echo ""
-	@echo "<<< $(YACC): Generando los archivos intermedios $(<:$(SRCDIR)/%.y=$(OBJDIR)/%.tab.c), $(<:$(SRCDIR)/%.y=$(OBJDIR)/%.tab.h) y $(<:$(SRCDIR)/%.y=$(OBJDIR)/%.output) >>>"
-	$(YACC) $(YFLAGS) -o"$(<:$(SRCDIR)/%.y=$(OBJDIR)/%.tab.c)" $<
-	@echo "<<< Archivos intermedios $(<:$(SRCDIR)/%.y=$(OBJDIR)/%.c), $(<:$(SRCDIR)/%.y=$(OBJDIR)/%.h) y $(<:$(SRCDIR)/%.y=$(OBJDIR)/%.output) generados. >>>"
+	@echo "<<< $(YACC): Generando los archivos intermedios $(patsubst $(OBJDIR)/%.tab.c,$(OBJDIR)/%.tab.h,$@), $@ y $(patsubst $(OBJDIR)/%.tab.c,$(OBJDIR)/%.output,$@) >>>"
+	$(YACC) $(YFLAGS) -o"$@" $<
+	@echo "<<< Archivos intermedios $(patsubst $(OBJDIR)/%.tab.c,$(OBJDIR)/%.tab.h,$@), $@ y $(patsubst $(OBJDIR)/%.tab.c,$(OBJDIR)/%.output,$@) generados. >>>"
 
 # Para LEX + CC (y sí hay YACC): Para generar los objetos desde $(OBJDIR)/%.lex+yacc.yy.c
 $(OBJDIR)/%.lex+yacc.yy.o: $(OBJDIR)/%.lex+yacc.yy.c
@@ -168,7 +140,7 @@ $(OBJDIR)/%.lex+yacc.yy.o: $(OBJDIR)/%.lex+yacc.yy.c
 	$(CC) $(CFLAGS) -c -o "$@" $<
 	@echo "<<< Archivo intermedio $@ generado. >>>"
 
-# Para LEX (y sí hay YACC): Para generar los archivos $(OBJDIR)/%.lex+yacc.yy.c desde $(SRCDIR)/%.l y $(OBJDIR)/%.tab.o
+# Para LEX (y sí hay YACC): Para generar los archivos $(OBJDIR)/%.lex+yacc.yy.c desde $(SRCDIR)/%.l
 $(OBJDIR)/%.lex+yacc.yy.c: $(SRCDIR)/%.l $(OBJDIR)/%.tab.o
 	@echo ""
 	@echo "<<< $(LEX): Generando el archivo intermedio $@ >>>"

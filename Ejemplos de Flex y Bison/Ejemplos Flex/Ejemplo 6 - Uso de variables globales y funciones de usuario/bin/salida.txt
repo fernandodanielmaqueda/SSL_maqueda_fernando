@@ -1,0 +1,4 @@
+El doble de la longitud de la cadena 12345 es 10 
+@#@"@&@%@$#El doble de la longitud de la cadena 12345 es 10 
+
+La suma de las longitudes de todas las cadenas reconocidas es 10
