@@ -24,50 +24,50 @@
 %%
     int linea_actual = 1;
 
-    /* Reconocer ' -> ' ó "'" ó \' ó ['] ó ["'"] ó [\'] */
-    /* Reconocer _ -> _ ó "_" ó \_ ó [_] ó ["_"] ó [\_] */
-    /* Reconocer # -> # ó "#" ó \# ó [#] ó ["#"] ó [\#] */
-    /* Reconocer & -> & ó "&" ó \& ó [&] ó ["&"] ó [\&] */
-    /* Reconocer = -> = ó "=" ó \= ó [=] ó ["="] ó [\=] */
-    /* Reconocer > -> > ó ">" ó \> ó [>] ó [">"] ó [\>] */
-    /* Reconocer @ -> @ ó "@" ó \@ ó [@] ó ["@"] ó [\@] */
-    /* Reconocer , -> , ó "," ó \, ó [,] ó [","] ó [\,] */
-    /* Reconocer : -> : ó ":" ó \: ó [:] ó [":"] ó [\:] */
-    /* Reconocer ; -> ; ó ";" ó \; ó [;] ó [";"] ó [\;] */
-    /* Reconocer ` -> ` ó "`" ó \` ó [`] ó ["`"] ó [\`] */
-    /* Reconocer ´ -> ´ ó "´" ó \´ ó [´] (funciona mal: acepta la regla dos veces) ó ["´"] (funciona mal: acepta la regla dos veces) ó [\´] (funciona mal: acepta la regla dos veces) */
-    /* Reconocer ¿ -> ¿ ó "¿" ó \¿ ó [¿] (funciona mal: acepta la regla dos veces) ó ["¿"] (funciona mal: acepta la regla dos veces) ó [\¿] (funciona mal: acepta la regla dos veces) */
-    /* Reconocer ¡ -> ¡ ó "¡" ó \¡ ó [¡] (funciona mal: acepta la regla dos veces) ó ["¡"] (funciona mal: acepta la regla dos veces) ó [\¡] (funciona mal: acepta la regla dos veces) */
-    /* Reconocer ¬ -> ¬ ó "¬" ó \¬ ó [¬] (funciona mal: acepta la regla dos veces) ó ["¬"] (funciona mal: acepta la regla dos veces) ó [\¬] (funciona mal: acepta la regla dos veces) */
-    /* Reconocer ° -> ° ó "°" ó \° ó [°] (funciona mal: acepta la regla dos veces) ó ["°"] (funciona mal: acepta la regla dos veces) ó [\°] (funciona mal: acepta la regla dos veces) */
-    /* Reconocer [ -> [ ó "[" ó \[ ó [[] (no recomendado) ó ["["] ó [\[] */
-    /* Reconocer ] -> ] ó "]" ó \] ó []] (no recomendado) ó [\]] */
-    /* Reconocer ~ -> ~ ó "~" ó \~ ó ["~"] ó [\~] */
+    /* Reconocer ' -> ' ó "'" ó \' ó ['] ó [\'] */
+    /* Reconocer _ -> _ ó "_" ó \_ ó [_] ó [\_] */
+    /* Reconocer # -> # ó "#" ó \# ó [#] ó [\#] */
+    /* Reconocer & -> & ó "&" ó \& ó [&] ó [\&] */
+    /* Reconocer = -> = ó "=" ó \= ó [=] ó [\=] */
+    /* Reconocer > -> > ó ">" ó \> ó [>] ó [\>] */
+    /* Reconocer @ -> @ ó "@" ó \@ ó [@] ó [\@] */
+    /* Reconocer , -> , ó "," ó \, ó [,] ó [\,] */
+    /* Reconocer : -> : ó ":" ó \: ó [:] ó [\:] */
+    /* Reconocer ; -> ; ó ";" ó \; ó [;] ó [\;] */
+    /* Reconocer ` -> ` ó "`" ó \` ó [`] ó [\`] */
+    /* Reconocer ´ -> ´ ó "´" ó \´ ó [´] (funciona mal: acepta la regla dos veces) ó [\´] (funciona mal: acepta la regla dos veces) */
+    /* Reconocer ¿ -> ¿ ó "¿" ó \¿ ó [¿] (funciona mal: acepta la regla dos veces) ó [\¿] (funciona mal: acepta la regla dos veces) */
+    /* Reconocer ¡ -> ¡ ó "¡" ó \¡ ó [¡] (funciona mal: acepta la regla dos veces) ó [\¡] (funciona mal: acepta la regla dos veces) */
+    /* Reconocer ¬ -> ¬ ó "¬" ó \¬ ó [¬] (funciona mal: acepta la regla dos veces) ó [\¬] (funciona mal: acepta la regla dos veces) */
+    /* Reconocer ° -> ° ó "°" ó \° ó [°] (funciona mal: acepta la regla dos veces) ó [\°] (funciona mal: acepta la regla dos veces) */
+    /* Reconocer [ -> [ ó "[" ó \[ ó [\[] */
+    /* Reconocer ] -> ] ó "]" ó \] ó [\]] */
+    /* Reconocer ~ -> ~ ó "~" ó \~ ó [\~] */
 
-    /* Reconocer [0-9] -> 5 ó "5" ó [5] ó ["5"] */
-    /* Reconocer [a-zA-Z] (incluídas ñ y Ñ) -> z ó "z" ó [z] ó ["z"] */
+    /* Reconocer [0-9] -> 5 ó "5" ó [5] */
+    /* Reconocer [a-zA-Z] (incluídas ñ y Ñ) -> z ó "z" ó [z] */
 
-    /* Reconocer \ -> "\\" ó \\ ó ["\\"] ó [\\] */
-    /* Reconocer " -> "\"" ó \" ó ["] (no recomendado) ó ["\""] ó [\"] */
+    /* Reconocer \ -> "\\" ó \\ ó [\\] */
+    /* Reconocer " -> "\"" ó \" ó ["] ó [\"] */
 
-    /* Reconocer ! -> "!" ó \! ó [!] ó ["!"] ó [\!] */
-    /* Reconocer % -> "%" ó \% ó [%] ó ["%"] ó [\%] */
-    /* Reconocer < -> "<" ó \< ó [<] ó ["<"] ó [\<] */
-    /* Reconocer  (un espacio) -> " " ó \  ó [ ] ó [" "] ó [\ ]*/
-    /* Reconocer / -> "/" ó \/ ó [/] (no recomendado) ó ["/"] ó [\/] */
-    /* Reconocer * -> "*" ó \* ó [*] (no recomendado) ó ["*"] ó [\*] */
-    /* Reconocer + -> "+" ó \+ ó [+] (no recomendado) ó ["+"] ó [\+] */
-    /* Reconocer - -> "-" ó \- ó [-] (no recomendado) ó ["-"] ó [\-] */
-    /* Reconocer ? -> "?" ó \? ó [?] (no recomendado) ó ["?"] ó [\?] */
-    /* Reconocer $ -> "$" ó \$ ó [$] (no recomendado) ó ["$"] ó [\$] */
-    /* Reconocer ( -> "(" ó \( ó [(] (no recomendado) ó ["("] ó [\(] */
-    /* Reconocer ) -> ")" ó \) ó [)] (no recomendado) ó [")"] ó [\)] */
-    /* Reconocer { -> "{" ó \{ ó [{] (no recomendado) ó ["{"] ó [\{] */
-    /* Reconocer } -> "}" ó \} ó [}] (no recomendado) ó ["}"] ó [\}] */
-    /* Reconocer . -> "." ó \. ó [.] (no recomendado) ó ["."] ó [\.] */
-    /* Reconocer | -> "|" ó \| ó [|] (no recomendado) ó ["|"] ó [\|] */
-    /* Reconocer ^ -> "^" ó \^ ó ["^"] ó [\^] */
-    /* Reconocer ¨ -> "¨" ó \¨ ó ["¨"] (funciona mal: acepta la regla dos veces) ó [\¨] (funciona mal: acepta la regla dos veces) */
+    /* Reconocer ! -> "!" ó \! ó [!] ó [\!] */
+    /* Reconocer % -> "%" ó \% ó [%] ó [\%] */
+    /* Reconocer < -> "<" ó \< ó [<] ó [\<] */
+    /* Reconocer  (un espacio) -> " " ó \  ó [ ] ó [\ ]*/
+    /* Reconocer / -> "/" ó \/ ó [/] ó [\/] */
+    /* Reconocer * -> "*" ó \* ó [*] ó [\*] */
+    /* Reconocer + -> "+" ó \+ ó [+] ó [\+] */
+    /* Reconocer ? -> "?" ó \? ó [?] ó [\?] */
+    /* Reconocer $ -> "$" ó \$ ó [$] ó [\$] */
+    /* Reconocer ( -> "(" ó \( ó [(] ó [\(] */
+    /* Reconocer ) -> ")" ó \) ó [)] ó [\)] */
+    /* Reconocer { -> "{" ó \{ ó [{] ó [\{] */
+    /* Reconocer } -> "}" ó \} ó [}] ó [\}] */
+    /* Reconocer . -> "." ó \. ó [.] ó [\.] */
+    /* Reconocer | -> "|" ó \| ó [|] ó [\|] */
+    /* Reconocer ¨ -> "¨" ó \¨ ó [\¨] (funciona mal: acepta la regla dos veces) */
+    /* Reconocer ^ -> "^" ó \^ ó [\^] */
+    /* Reconocer - -> "-" ó \- ó [\-] */
 
     /* Reconoce saltos de línea */
 [\n]+ printf("\\n \n"); linea_actual += yyleng;

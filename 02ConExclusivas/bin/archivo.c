@@ -1,33 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-
-void inicializarString(char** destino, char* fuente)
-{
-    *destino = (char*) malloc((strlen(fuente) + 1) * sizeof(char));
-    if(*destino == NULL)
-    {
-        printf("Hubo un fallo de asignacion de memoria dinamica\n");
-        system("pause");
-        exit(1);
-    }
-    strcpy(*destino, fuente);
-}
-
-void concatenarString(char** destino, char* fuente)
-{
-    *destino = (char*) realloc(*destino, (strlen(*destino) + strlen(fuente) + 1) * sizeof(char));
-    if(*destino == NULL)
-    {
-        printf("Hubo un fallo de asignacion de memoria dinamica\n");
-        system("pause");
-        exit(1);
-    }
-    strcat(*destino, fuente);
-}
-
-/*
 //Constantes enteras decimales
 1
 1u
@@ -61,14 +31,14 @@ void concatenarString(char** destino, char* fuente)
 
 //Constantes reales
     //Constante Fracción
-.1
-.12
-1.1
-1.12
-12.1
-12.12
-1.
-12.
+.1.
+.12.
+1.1.
+1.12.
+12.1.
+12.12.
+1..
+12..
 
     //Constante Fracción + Parte Exponente
 
@@ -178,5 +148,3 @@ void concatenarString(char** destino, char* fuente)
 12e-1f
 1e-12f
 12e-12f
-
-*/

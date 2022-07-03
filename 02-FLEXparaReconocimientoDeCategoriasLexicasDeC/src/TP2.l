@@ -43,49 +43,97 @@ Trabajo Práctico n° 2 - FLEX para reconocimiento de categorías léxicas de C
 /*
     Notas sobre el uso de FLEX:
 
-    Prioridad/Precedencia de operadores en las ERX:
-        << Mayor prioridad / Precedencia más alta >>
-            \ (una secuencia de escape)
-                \n (para secuencias de escape simples hace una interpretación ANSI-C (en este caso reconoce un "salto de línea"))
-                \0 (para secuencias de escape octales hace una interpretación ANSI-C (en este caso reconoce un caracter NUL (código ASCII 0)))
-                \x2a (para secuencias de escape hexadecimales hace una interpretación ANSI-C (en este caso reconoce el caracter con valor hexadecimal 2a)))
-                \\n (en este caso reconoce la ER \n)
-                \* (en este caso reconoce la ER *)
-            x (caracteres/símbolos, excepto los reservados para los metacaracteres/operadores de la ERX (en este caso la ER x)) 
-            [] (describe un conjunto/clase de caracteres, simplifica el uso del operador "unión" (+ en ER y | en ERX). Dentro de una clase de caracteres, todos los operadores de ERX pierden su significado especial a excepción del caracter de escape (\), el operador ^ cambia su significado y se agregan los operador - y :):
-                [xyz] (una "clase de caracteres" (en este caso representa la ER x+y+z))
-                [abj-oZ] (una "clase de caracteres" con un rango/intervalo (en este caso representa la ER a+b+j+k+l+m+n+o+Z)
-                [^A-Z] (una "clase de caracteres" negada (en este caso cualquier caracter EXCEPTO una letra mayúscula). También emparejará una línea nueva (\n) a menos que \n (o una secuencia de escape equivalente) sea uno de los caracteres presentes explícitamente en la clase de caracteres negada. Sólo puede aparecer al principio de la "clase de caracteres", sino pierde sus propiedades especiales y es tratado como un caracter normal.)
-                [:alnum:] [:alpha:] [:blank:] [:cntrl:] [:digit:] [:graph:] [:lower:] [:print:] [:punct:] [:space:] [:upper:] [:xdigit:] (expresiones de clases de caracteres, son expresiones encerradas entre los delimitadores [: y :] que también deben aparecer entre el [ y el ] de la clase de caracteres, y además pueden darse otros elementos dentro de la clase de caracteres. Por ejemplo, las siguientes ERX son equivalentes: [[:alnum:]] = [[:alpha:][:digit]] = [[:alpha]0-9] = [a-zA-Z0-9])
-            "" (un literal cadena. Dentro de un literal cadena, todos los operadores de ERX pierden su significado especial (incluyendo también a la clase de caracteres []), con excepción del caracter de escape (\).)
-                "*""\\n"\""qwe" (en este caso reconoce la ER *\nqwe")
-            {nombre} (la expansión de la definición de "nombre" (que debe haber sido definido previamente en la sección de definiciones de FLEX). La ERX para los nombres de las definiciones de FLEX es la misma que la de identificadores de C: [_a-zA-Z][_a-zA-Z0-9]*)
-            . (se corresponde con cualquier caracter (byte) excepto el "línea nueva" (\n))
-            () (se utilizan para agrupar/emparejar una ER y anular la precedencia, por ejemplo: (r(s|t))+ )
-            r* (operador clausura de Kleene: cero o más ocurrencias de la ER que lo precede)
-            r+ (operador clausura positiva: una o más ocurrencias de la ER que lo precede)
-            r? (operador que indica cero o una ocurrencia de la ER que lo precede (es decir, "una ER opcional"))
-            {} (operador potencia, una repetición determinada del patrón que lo precede como operando)
-                r{2,5} (es el operador potencia extendido a un intervalo cerrado (en este caso significa de dos a cinco r's, representando la ER rr+rrr+rrrr+rrrrr))
-                r{2,} (es el operador potencia extendido a un intervalo infinito (en este caso significa dos o más r's, representando la ER rr+rrr+rrrr+rrrrr+...))
-                r{4} (en este caso significa exactamente 4 r's, representando la ER rrrr)
-            rs (patrones; se denomina "concatenación")
-            r|s (es el operador unión de ERs (en este caso representa la ER r+s))
-            r/s (patrón "de contexto posterior": reconoce la ER r pero sólo si va seguida por la ER s. El texto emparejado por la ER s se incluye cuando se determina si esta regla es el "emparejamiento más largo", pero se devuelve entonces a la entrada antes que se ejecute la acción, así que la acción sólo ve el texto emparejado por la ER r. (Nota: hay algunas combinaciones de r/s que FLEX no puede emparejar correctamente, ver Capitulo 21 [Deficiencias / Errores], página 50, las notas acerca del "contexto posterior peligroso", del manual de Flex, versión 2.5). Una regla puede tener sólo una instancia del contexto posterior (de los operadores / y $))
-            ^r (la ER r, pero sólo al comienzo de una línea (es decir, justo al comienzo del análisis o a la derecha después de que se haya analizado una línea nueva (\n)). Sólo puede aparecer al principio del patrón, sino pierde sus propiedades especiales y es tratado como un caracter normal.)
-            r$ (la ER r, pero sólo al final de una línea (es decir, justo antes de una línea nueva (\n)). Equivalente a r/\n. Sólo puede aparecer al final del patrón, sino pierde sus propiedades especiales y es tratado como un caracter normal.  Una regla puede tener sólo una instancia del contexto posterior (de los operadores / y $))
-            <<EOF>> (un end-of-file (fin-de-fichero). Sólo puede combinarse con condiciones de arranque, por ejemplo r<<EOF>> y <<EOF>>r no son válidos, y además no puede agruparse dentro de paréntesis.)
-                <s><<EOF>> un end-of-file en una condición de arranque s
-                <s1,s2><<EOF>> un end-of-file en una condición de arranque s1 ó s2
-            <condiciones,de,arranque>r (condiciones de arranque (ver Capítulo 9 [Condiciones de arranque], página 16, del manual de Flex, versión 2.5). Las condiciones de arranque sólo pueden aparecer al principio de un patrón, y no pueden agruparse dentro de paréntesis.)
-                <s>r (una ER r, pero sólo en la condición de arranque s)
-                <s1,s2,s3>r (una ER r, pero en cualquiera de las condiciones de arranque s1, s2, ó s3)
-                <*>r (una ER r en cualquier condición de arranque, incluso en una exclusiva)
-        << Menor prioridad / Precedencia más baja >>
+        Prioridad/Precedencia de operadores en las ERX:
+            << Mayor prioridad / Precedencia más alta >>
+                \ (una secuencia de escape)
+                    \n (para secuencias de escape simples hace una interpretación ANSI-C (en este caso reconoce un "salto de línea"))
+                    \0 (para secuencias de escape octales hace una interpretación ANSI-C (en este caso reconoce un caracter NUL (código ASCII 0)))
+                    \x2a (para secuencias de escape hexadecimales hace una interpretación ANSI-C (en este caso reconoce el caracter con valor hexadecimal 2a)))
+                    \\n (en este caso reconoce la ER \n)
+                    \* (en este caso reconoce la ER *)
+                x (caracteres/símbolos, excepto los reservados para los metacaracteres/operadores de la ERX (en este caso la ER x)) 
+                [] (describe un conjunto/clase de caracteres, simplifica el uso del operador "unión" (+ en ER y | en ERX). Dentro de una clase de caracteres, todos los operadores de ERX pierden su significado especial a excepción del caracter de escape (\), el operador ^ cambia su significado y se agregan los operador - y :):
+                    [xyz] (una "clase de caracteres" (en este caso representa la ER x+y+z))
+                    [abj-oZ] (una "clase de caracteres" con un rango/intervalo (en este caso representa la ER a+b+j+k+l+m+n+o+Z)
+                    [^A-Z] (una "clase de caracteres" negada (en este caso cualquier caracter EXCEPTO una letra mayúscula). También emparejará una línea nueva (\n) a menos que \n (o una secuencia de escape equivalente) sea uno de los caracteres presentes explícitamente en la clase de caracteres negada. Sólo puede aparecer al principio de la "clase de caracteres", sino pierde sus propiedades especiales y es tratado como un caracter normal.)
+                    [:alnum:] [:alpha:] [:blank:] [:cntrl:] [:digit:] [:graph:] [:lower:] [:print:] [:punct:] [:space:] [:upper:] [:xdigit:] (expresiones de clases de caracteres, son expresiones encerradas entre los delimitadores [: y :] que también deben aparecer entre el [ y el ] de la clase de caracteres, y además pueden darse otros elementos dentro de la clase de caracteres. Por ejemplo, las siguientes ERX son equivalentes: [[:alnum:]] = [[:alpha:][:digit]] = [[:alpha]0-9] = [a-zA-Z0-9])
+                "" (un literal cadena. Dentro de un literal cadena, todos los operadores de ERX pierden su significado especial (incluyendo también a la clase de caracteres []), con excepción del caracter de escape (\).)
+                    "*""\\n"\""qwe" (en este caso reconoce la ER *\nqwe")
+                {nombre} (la expansión de la definición de "nombre" (que debe haber sido definido previamente en la sección de definiciones de FLEX). La ERX para los nombres de las definiciones de FLEX es la misma que la de identificadores de C: [_a-zA-Z][_a-zA-Z0-9]*)
+                . (se corresponde con cualquier caracter (byte) excepto el "línea nueva" (\n))
+                () (se utilizan para agrupar/emparejar una ER y anular la precedencia, por ejemplo: (r(s|t))+ )
+                r* (operador clausura de Kleene: cero o más ocurrencias de la ER que lo precede)
+                r+ (operador clausura positiva: una o más ocurrencias de la ER que lo precede)
+                r? (operador que indica cero o una ocurrencia de la ER que lo precede (es decir, "una ER opcional"))
+                {} (operador potencia, una repetición determinada del patrón que lo precede como operando)
+                    r{2,5} (es el operador potencia extendido a un intervalo cerrado (en este caso significa de dos a cinco r's, representando la ER rr+rrr+rrrr+rrrrr))
+                    r{2,} (es el operador potencia extendido a un intervalo infinito (en este caso significa dos o más r's, representando la ER rr+rrr+rrrr+rrrrr+...))
+                    r{4} (en este caso significa exactamente 4 r's, representando la ER rrrr)
+                rs (patrones; se denomina "concatenación")
+                r|s (es el operador unión de ERs (en este caso representa la ER r+s))
+                r/s (patrón "de contexto posterior": reconoce la ER r pero sólo si va seguida por la ER s. El texto emparejado por la ER s se incluye cuando se determina si esta regla es el "emparejamiento más largo", pero se devuelve entonces a la entrada antes que se ejecute la acción, así que la acción sólo ve el texto emparejado por la ER r. (Nota: hay algunas combinaciones de r/s que FLEX no puede emparejar correctamente, ver Capitulo 21 [Deficiencias / Errores], página 50, las notas acerca del "contexto posterior peligroso", del manual de Flex, versión 2.5). Una regla puede tener sólo una instancia del contexto posterior (de los operadores / y $))
+                ^r (la ER r, pero sólo al comienzo de una línea (es decir, justo al comienzo del análisis o a la derecha después de que se haya analizado una línea nueva (\n)). Sólo puede aparecer al principio del patrón, sino pierde sus propiedades especiales y es tratado como un caracter normal.)
+                r$ (la ER r, pero sólo al final de una línea (es decir, justo antes de una línea nueva (\n)). Equivalente a r/\n. Sólo puede aparecer al final del patrón, sino pierde sus propiedades especiales y es tratado como un caracter normal.  Una regla puede tener sólo una instancia del contexto posterior (de los operadores / y $))
+                <<EOF>> (un end-of-file (fin-de-fichero). Sólo puede combinarse con condiciones de arranque, por ejemplo r<<EOF>> y <<EOF>>r no son válidos, y además no puede agruparse dentro de paréntesis.)
+                    <s><<EOF>> un end-of-file en una condición de arranque s
+                    <s1,s2><<EOF>> un end-of-file en una condición de arranque s1 ó s2
+                <condiciones,de,arranque>r (condiciones de arranque (ver Capítulo 9 [Condiciones de arranque], página 16, del manual de Flex, versión 2.5). Las condiciones de arranque sólo pueden aparecer al principio de un patrón, y no pueden agruparse dentro de paréntesis.)
+                    <s>r (una ER r, pero sólo en la condición de arranque s)
+                    <s1,s2,s3>r (una ER r, pero en cualquiera de las condiciones de arranque s1, s2, ó s3)
+                    <*>r (una ER r en cualquier condición de arranque, incluso en una exclusiva)
+            << Menor prioridad / Precedencia más baja >>
 
-    atof y atoi
+        Reconocer caracteres especiales
+            Reconocer ' -> ' ó "'" ó \' ó ['] ó [\']
+            Reconocer _ -> _ ó "_" ó \_ ó [_] ó [\_]
+            Reconocer # -> # ó "#" ó \# ó [#] ó [\#]
+            Reconocer & -> & ó "&" ó \& ó [&] ó [\&]
+            Reconocer = -> = ó "=" ó \= ó [=] ó [\=]
+            Reconocer > -> > ó ">" ó \> ó [>] ó [\>]
+            Reconocer @ -> @ ó "@" ó \@ ó [@] ó [\@]
+            Reconocer , -> , ó "," ó \, ó [,] ó [\,]
+            Reconocer : -> : ó ":" ó \: ó [:] ó [\:]
+            Reconocer ; -> ; ó ";" ó \; ó [;] ó [\;]
+            Reconocer ` -> ` ó "`" ó \` ó [`] ó [\`]
+            Reconocer ´ -> ´ ó "´" ó \´ ó [´] (funciona mal: acepta la regla dos veces) ó [\´] (funciona mal: acepta la regla dos veces)
+            Reconocer ¿ -> ¿ ó "¿" ó \¿ ó [¿] (funciona mal: acepta la regla dos veces) ó [\¿] (funciona mal: acepta la regla dos veces)
+            Reconocer ¡ -> ¡ ó "¡" ó \¡ ó [¡] (funciona mal: acepta la regla dos veces) ó [\¡] (funciona mal: acepta la regla dos veces)
+            Reconocer ¬ -> ¬ ó "¬" ó \¬ ó [¬] (funciona mal: acepta la regla dos veces) ó [\¬] (funciona mal: acepta la regla dos veces)
+            Reconocer ° -> ° ó "°" ó \° ó [°] (funciona mal: acepta la regla dos veces) ó [\°] (funciona mal: acepta la regla dos veces)
+            Reconocer [ -> [ ó "[" ó \[ ó [\[]
+            Reconocer ] -> ] ó "]" ó \] ó [\]]
+            Reconocer ~ -> ~ ó "~" ó \~ ó [\~]
 
-    return 0; es equivalente a yyterminate;
+            Reconocer [0-9] -> 5 ó "5" ó [5]
+            Reconocer [a-zA-Z] (incluídas ñ y Ñ) -> z ó "z" ó [z]
+
+            Reconocer \ -> "\\" ó \\ ó [\\]
+            Reconocer " -> "\"" ó \" ó ["] ó [\"]
+
+            Reconocer ! -> "!" ó \! ó [!] ó [\!]
+            Reconocer % -> "%" ó \% ó [%] ó [\%]
+            Reconocer < -> "<" ó \< ó [<] ó [\<]
+            Reconocer  (un espacio) -> " " ó \  ó [ ] ó [\ ]
+            Reconocer / -> "/" ó \/ ó [/] ó [\/]
+            Reconocer * -> "*" ó \* ó [*] ó [\*]
+            Reconocer + -> "+" ó \+ ó [+] ó [\+]
+            Reconocer ? -> "?" ó \? ó [?] ó [\?]
+            Reconocer $ -> "$" ó \$ ó [$] ó [\$]
+            Reconocer ( -> "(" ó \( ó [(] ó [\(]
+            Reconocer ) -> ")" ó \) ó [)] ó [\)]
+            Reconocer { -> "{" ó \{ ó [{] ó [\{]
+            Reconocer } -> "}" ó \} ó [}] ó [\}]
+            Reconocer . -> "." ó \. ó [.] ó [\.]
+            Reconocer | -> "|" ó \| ó [|] ó [\|]
+            Reconocer ¨ -> "¨" ó \¨ ó [\¨] (funciona mal: acepta la regla dos veces)
+            Reconocer ^ -> "^" ó \^ ó [\^]
+            Reconocer - -> "-" ó \- ó [\-]
+
+        Un salto de línea (\n) y un <<EOF>> tienen yyleng de 1
+
+        return 0; es equivalente a yyterminate;
+
+        atof y atoi
 */
 
 /* Con esta opción la función de análisis int yylex(void); se comporta como si en la sección de usuario existiera la función int yywrap(void) return 1; la cual devuelve verdadero (no-cero), haciendo que una vez que la función de análisis int yylex(void) reciba una indicación de EOF desde YY_INPUT, asuma que no hay nada más para analizar de yyin y finalice (haciendo un return 0;) */
@@ -104,7 +152,7 @@ Trabajo Práctico n° 2 - FLEX para reconocimiento de categorías léxicas de C
 /* Condiciones de arranque inclusivas */
 /* %s */
 /* Condiciones de arranque exclusivas */
-%x constanteEnteraDecimal constanteEnteraOctal constanteEnteraHexa constanteReal constanteCaracter literalCadena identificador comentarioDeMultiplesLineas comentarioDeUnaLinea tokenNoReconocido
+%x constanteEnteraDecimal constanteEnteraOctal constanteEnteraHexa constanteReal constanteCaracter literalCadena palabraReservada_tipoDeDato palabraReservada_estructuraDeControl palabraReservada_otro identificador comentarioDeMultiplesLineas tokenNoReconocido
 
 /* Inicio de la sección de definiciones */
 
@@ -131,96 +179,107 @@ caracteresDePuntuacionYOperadores "<<="|>>=|"..."|"->"|"++"|"--"|"<<"|>>|"<="|>=
 
     /* Constantes */
         /* Entera decimal */
-{digitoNoCero}{digito}*{sufijoEntero}?/{caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {columna_actual += yyleng; printf ("Reconocida: constante entera decimal: %s \n", yytext);}
 {digitoNoCero}{digito}*{sufijoEntero}? {columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(constanteEnteraDecimal);}
 <constanteEnteraDecimal>{
-    <<EOF>> {columna_actual -= strlen(buffer); printf ("Reconocida: constante entera decimal: %s \n", buffer); free(buffer); return 0;}
-    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual -= strlen(buffer); concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual, buffer); free(buffer); BEGIN(INITIAL);}
+    <<EOF>> {printf ("%s:%d:%d: Reconocida: constante entera decimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+    {caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {printf ("%s:%d:%d: Reconocida: constante entera decimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
 }
         /* Entera octal */
-0{digitoOctal}*{sufijoEntero}?/{caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {columna_actual += yyleng; printf ("Reconocida: constante entera octal: %s \n", yytext);}
 0{digitoOctal}*{sufijoEntero}? {columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(constanteEnteraOctal);}
 <constanteEnteraOctal>{
-    <<EOF>> {columna_actual -= strlen(buffer); printf ("Reconocida: constante entera octal: %s \n", buffer); free(buffer); return 0;}
-    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual -= strlen(buffer); concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual, buffer); free(buffer); BEGIN(INITIAL);}
+    <<EOF>> {printf ("%s:%d:%d: Reconocida: constante entera octal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+    {caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {printf ("%s:%d:%d: Reconocida: constante entera octal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
 }
         /* Entera hexadecimal */
-0[xX]{digitoHexa}+{sufijoEntero}?/{caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {columna_actual += yyleng; printf ("Reconocida: constante entera hexadecimal: %s \n", yytext);}
 0[xX]{digitoHexa}+{sufijoEntero}? {columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(constanteEnteraHexa);}
 <constanteEnteraHexa>{
-    <<EOF>> {columna_actual -= strlen(buffer); printf ("Reconocida: constante entera hexadecimal: %s \n", buffer); free(buffer); return 0;}
-    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual -= strlen(buffer); concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual, buffer); free(buffer); BEGIN(INITIAL);}
+    <<EOF>> {printf ("%s:%d:%d: Reconocida: constante entera hexadecimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+    {caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {printf ("%s:%d:%d: Reconocida: constante entera hexadecimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
 }
         /* Real */
-"."+/"." {columna_actual += yyleng; printf ("Reconocida: constante real: %s \n", yytext);}
-(((({digito}*"."{digito}+)|({digito}+".")){parteExponente}?)|({digito}+{parteExponente})){sufijoReal}? {columna_actual += yyleng; printf ("Reconocida: constante real: %s \n", yytext);}
+(((({digito}*"."{digito}+)|({digito}+".")){parteExponente}?)|({digito}+{parteExponente})){sufijoReal}? {columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(constanteReal);}
 <constanteReal>{
-    <<EOF>> {columna_actual -= strlen(buffer); printf ("Reconocida: constante real: %s \n", buffer); free(buffer); return 0;}
-    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual -= strlen(buffer); concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual, buffer); free(buffer); BEGIN(INITIAL);}
+    <<EOF>> {printf ("%s:%d:%d: Reconocida: constante real: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+    {caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {printf ("%s:%d:%d: Reconocida: constante real: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
 }
         /* Caracter */
-' {columna_actual += yyleng; BEGIN(constanteCaracter);}
+' {columna_actual += 1; BEGIN(constanteCaracter);}
 <constanteCaracter>{
-    {secuenciaEscapeHexa}' {columna_actual += yyleng; printf ("Reconocida: constante caracter con secuencia de escape hexadecimal: '%s \n", yytext); BEGIN(INITIAL);}
-    {secuenciaEscapeOctal}' {columna_actual += yyleng; printf ("Reconocida: constante caracter con secuencia de escape octal: '%s \n", yytext); BEGIN(INITIAL);}
-    {secuenciaEscapeSimple}' {columna_actual += yyleng; printf ("Reconocida: constante caracter con secuencia de escape simple: '%s \n", yytext); BEGIN(INITIAL);}
-    [^\\'\n]' {columna_actual += yyleng; printf ("Reconocida: constante caracter simple: '%s \n", yytext); BEGIN(INITIAL);}
-    [^'\n]*' {printf ("%s:%d:%d: Error lexico: constante caracter invalida \n", archivo_yyin, linea_actual, columna_actual); return 1;}
-    [^'\n]+ |
-    \n |
-    <<EOF>> {printf ("%s:%d:%d: Error sintactico: falta el caracter ' de cierre de la constante caracter \n", archivo_yyin, linea_actual, columna_actual); return 1;}
+    {secuenciaEscapeHexa}' {printf ("%s:%d:%d: Reconocida: constante caracter con secuencia de escape hexadecimal: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+    {secuenciaEscapeOctal}' {printf ("%s:%d:%d: Reconocida: constante caracter con secuencia de escape octal: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+    {secuenciaEscapeSimple}' {printf ("%s:%d:%d: Reconocida: constante caracter con secuencia de escape simple: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+    [^\\'\n]' {printf ("%s:%d:%d: Reconocida: constante caracter simple: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+    [^'\n]*' {printf ("%s:%d:%d: Error lexico: constante caracter invalida: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+    [^'\n]+ {printf ("%s:%d:%d: Error sintactico: falta el caracter ' de cierre de la constante caracter: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+    \n+ {printf ("%s:%d:%d: Error sintactico: falta el caracter ' de cierre de la constante caracter: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); linea_actual += yyleng; columna_actual = 0; BEGIN(INITIAL);}
+    <<EOF>> {printf ("%s:%d:%d: Error sintactico: falta el caracter ' de cierre de la constante caracter: ' \n", archivo_yyin, linea_actual, columna_actual - 1); return 1;}
 }
     /* Literal cadena */
-\" {columna_actual += yyleng; BEGIN(literalCadena);}
+\" {columna_actual += 1; BEGIN(literalCadena);}
 <literalCadena>{
-    ({secuenciaEscapeHexa}|{secuenciaEscapeOctal}|{secuenciaEscapeSimple}|[^\"\n\\])*\" {columna_actual += yyleng; printf ("Reconocido: literal cadena: \"%s \n", yytext); BEGIN(INITIAL);}
-    [^\"\n]*\" {printf ("%s:%d:%d: Error lexico: literal cadena invalido \n", archivo_yyin, linea_actual, columna_actual); return 1;}
-    [^\"\n]+ |
-    \n |
-    <<EOF>> {printf ("%s:%d:%d: Error sintactico: falta el caracter \" de cierre del literal cadena \n", archivo_yyin, linea_actual, columna_actual); return 1;}
+    ({secuenciaEscapeHexa}|{secuenciaEscapeOctal}|{secuenciaEscapeSimple}|[^\"\n\\])*\" {printf ("%s:%d:%d: Reconocido: literal cadena: \"%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+    [^\"\n]*\" {printf ("%s:%d:%d: Error lexico: literal cadena invalido: \"%s \n", archivo_yyin, linea_actual, columna_actual, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+    [^\"\n]+ {printf ("%s:%d:%d: Error sintactico: falta el caracter \" de cierre del literal cadena: \"%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+    \n+ {printf ("%s:%d:%d: Error sintactico: falta el caracter \" de cierre del literal cadena: \"%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); linea_actual += yyleng; columna_actual = 0; BEGIN(INITIAL);}
+    <<EOF>> {printf ("%s:%d:%d: Error sintactico: falta el caracter \" de cierre del literal cadena: \" \n", archivo_yyin, linea_actual, columna_actual - 1); return 1;}
 }
     /* Palabras reservadas */
         /* Tipo de dato */
-char|double|enum|float|int|long|short|struct|union|void {columna_actual += yyleng; printf ("Reconocida: palabra reservada (tipo de dato): %s \n", yytext);}
+char|double|enum|float|int|long|short|struct|union|void {columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(palabraReservada_tipoDeDato);}
+<palabraReservada_tipoDeDato>{
+    <<EOF>> {printf ("%s:%d:%d: Reconocida: palabra reservada (tipos de dato): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+    {caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {printf ("%s:%d:%d: Reconocida: palabra reservada (tipos de dato): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+}
         /* Estructuras de control */
-break|case|continue|default|do|else|for|goto|if|return|switch|while {columna_actual += yyleng; printf ("Reconocida: palabra reservada (estructuras de control): %s \n", yytext);}
+break|case|continue|default|do|else|for|goto|if|return|switch|while {columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(palabraReservada_estructuraDeControl);}
+<palabraReservada_estructuraDeControl>{
+    <<EOF>> {printf ("%s:%d:%d: Reconocida: palabra reservada (estructuras de control): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+    {caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {printf ("%s:%d:%d: Reconocida: palabra reservada (estructuras de control): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+}
         /* Otros */
-auto|const|extern|register|signed|sizeof|static|typedef|unsigned|volatile {columna_actual += yyleng; printf ("Reconocida: palabra reservada (otros): %s \n", yytext);}
+auto|const|extern|register|signed|sizeof|static|typedef|unsigned|volatile {columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(palabraReservada_otro);}
+<palabraReservada_otro>{
+    <<EOF>> {printf ("%s:%d:%d: Reconocida: palabra reservada (otros): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+    {caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {printf ("%s:%d:%d: Reconocida: palabra reservada (otros): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+}
     /* Identificadores */
-{noDigito}({noDigito}|{digito})*/{caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {columna_actual += yyleng; printf ("Reconocido: identificador: %s \n", yytext);}
 {noDigito}({noDigito}|{digito})* {columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(identificador);}
 <identificador>{
-    <<EOF>> {columna_actual -= strlen(buffer); printf ("Reconocido: identificador: %s \n", buffer); free(buffer); return 0;}
-    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual -= strlen(buffer); concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual, buffer); free(buffer); BEGIN(INITIAL);}
+    <<EOF>> {printf ("%s:%d:%d: Reconocido: identificador: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+    {caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {printf ("%s:%d:%d: Reconocido: identificador: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
 }
     /* Caracteres de puntuación/operadores de C */
-{caracteresDePuntuacionYOperadores} {columna_actual += yyleng; printf ("Reconocido: caracter de puntuacion/operador de C: %s \n", yytext);}
-
+{caracteresDePuntuacionYOperadores} {printf ("%s:%d:%d: Reconocido: caracter de puntuacion/operador de C: %s \n", archivo_yyin, linea_actual, columna_actual, yytext); columna_actual += yyleng;}
     /* Comentarios */
         /* Comentarios de una línea */
-"//" {BEGIN(comentarioDeUnaLinea);}
-<comentarioDeUnaLinea>{
-    [^\n]+ {printf("Reconocido: comentario de una linea: //%s \n", yytext);}
-    \n {++linea_actual; columna_actual = 0; BEGIN(INITIAL);}
-}
+"//"[^\n]+ {printf("%s:%d:%d: Reconocido: comentario de una linea: %s \n", archivo_yyin, linea_actual, columna_actual, yytext);}
         /* Comentarios de múltiples líneas */
-"/*" {columna_actual += yyleng; inicializarString(&buffer, "/*"); BEGIN(comentarioDeMultiplesLineas);}
+"/*" {printf ("%s:%d:%d: ", archivo_yyin, linea_actual, columna_actual); columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(comentarioDeMultiplesLineas);}
 <comentarioDeMultiplesLineas>{
-    [^"*/"\n]+ {columna_actual += yyleng; concatenarString(&buffer, yytext);}
+    [^*\n]+ {columna_actual += yyleng; concatenarString(&buffer, yytext);}
+    \*+ {columna_actual += yyleng; concatenarString(&buffer, yytext);}
     \n+ {linea_actual += yyleng; columna_actual = 0; concatenarString(&buffer, yytext);}
     "*/" {columna_actual += yyleng; concatenarString (&buffer, yytext); printf("Reconocido: comentario de multiples lineas: %s \n", buffer); free(buffer); BEGIN(INITIAL);}
-    <<EOF>> {columna_actual -= strlen(buffer); printf ("%s:%d:%d: Error sintactico (para el preprocesamiento): comentario multilinea sin terminar \n", archivo_yyin, linea_actual, columna_actual); free(buffer); return 1;}
+    <<EOF>> {printf ("Error sintactico (para el preprocesamiento): comentario multilinea sin terminar: %s \n", buffer); free(buffer); return 1;}
 }
 
-[^ \t\n]/({caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n) {printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual, yytext); columna_actual += yyleng;}
-[^ \t\n] {inicializarString(&buffer, yytext); BEGIN(tokenNoReconocido);}
+[^ \t\n] {columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(tokenNoReconocido);}
 <tokenNoReconocido>{
-    <<EOF>> {printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual, buffer); free(buffer); return 1;}
-    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual, buffer); free(buffer); BEGIN(INITIAL);}
-    [^0-9'"_a-zA-Z<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n] ;
+    <<EOF>> {printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 1;}
+    {caracteresDePuntuacionYOperadores}|"//"|"/*"|" "|\t|\n {printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+    [^<>.\-+=!&|*/%^#\[\]\(\)\{\}~?:;, \t\n]+ {columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
 }
 [ \t]+ {columna_actual += yyleng;}
-[\n]+ {linea_actual += yyleng; columna_actual = 0;}
+\n+ {linea_actual += yyleng; columna_actual = 0;}
+<<EOF>> return 0;
 
 %%
 /* Fin de la sección de reglas */
