@@ -34,7 +34,7 @@ LFLAGS+=
 # Compilador de C a usar
 CC:=gcc
 # Banderas para el compilador de C. -I agrega un directorio donde se encuentran includes. Opcionalmente se puede agregar -Wall, que sirve para mostrar los warnings (los flags -I$(SRCDIR) y -I$(OBJDIR) sí que son necesarios)
-CFLAGS+=-I$(SRCDIR) -I$(OBJDIR)
+CFLAGS+=-I$(SRCDIR) -I$(OBJDIR) -Wall
 
 # wildcard me busca todos los archivos que cumplan con la condición y los concatena
 YOBJS=$(patsubst $(SRCDIR)/%.y, $(OBJDIR)/%.tab.o, $(wildcard $(SRCDIR)/*.y))
@@ -51,7 +51,7 @@ WARNING:=IMPORTANTE: el comando make debe ejecutarse en una consola/terminal bas
 $(info $(WARNING))
 
 # Para crear reglas que no generen objetos de ese mismo nombre
-.PHONY: warnings-on warnings-off all run open close clean debug
+.PHONY: warnings-on warnings-off all run open close clean debug rebuild
 
 # Para generar todos los objetos necesarios, se usa la sig estructura:
 
@@ -143,6 +143,9 @@ debug: CFLAGS += -DDEBUG -g
 debug: CFLAGS4Y += -DBISON_DEBUG
 # Primero hace un make clean y luego un make all con todos los nuevos valores asignados a las variables de arriba
 debug: clean all
+
+# Para volver a compilar aunque no se detecten cambios
+rebuild: clean all
 
 # Para que no elimine los archivos secundarios (aquellos que son creados por regla prerequisito de otra regla) una vez buildeado
 .SECONDARY: $(BINS) $(COBJS) $(YOBJS) $(YOBJS:%.o=%.c) $(YOBJS:%.o=%.h) $(YOBJS:%.tab.o=%.output) $(LOBJS:%.yy.o=%.lex+yacc.yy.o) $(LOBJS:%.yy.o=%.lex+yacc.yy.c) $(LOBJS:%.yy.o=%.lex.yy.o) $(LOBJS:%.yy.o=%.lex.yy.c)

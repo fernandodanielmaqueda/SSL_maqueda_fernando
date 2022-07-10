@@ -868,7 +868,7 @@ Trabajo Práctico n° 2 - FLEX para reconocimiento de categorías léxicas de C
         * Constantes (Entera decimal, entera octal, entera hexadecimal, real, caracter)
         * Literal cadena
         * Palabras reservadas (distinguir entre tipo de dato, estructuras de control y otros)
-        * Identificadores 
+        * Identificadores
         * Caracteres de puntuación/operadores de C.
 
     Comentarios (en realidad son reconocidos por el PREPROCESADOR)
@@ -881,14 +881,14 @@ Trabajo Práctico n° 2 - FLEX para reconocimiento de categorías léxicas de C
         * Listado de literales cadena encontrados indicando la longitud de los mismos y ordenados por longitud ascendente. En caso de igual longitud no importa el orden. Si un literal cadena aparece más de una vez, no volverlo a agregar a la lista.
         * Listado de palabras reservadas en el orden en el que han aparecido en el archivo. Si una palabra reservada aparece de forma repetida, se debe agregar a la lista por cada vez que aparece.
         * Listado de constantes indicando según su tipo:
-            -> Para las constantes octales indicar su valor entero decimal.
-            -> Para las constante hexadecimales indicar u valor entero decimal.
+            -> Para las constantes octales indicar su valor entero decimal. -- conversion = (int) strtol(buffer, &sufijo, 0); (cambiar la conversión explícita según el sufijo, ó si no nos interesa el sufijo poner NULL en su lugar, sacar la conversión explícita y nos quedará el long int que retorna strtol)
+            -> Para las constante hexadecimales indicar su valor entero decimal.
             -> Para las constantes decimales indicar el valor de cada una y el total acumulado de sumar todas ellas.
-            -> Para las constantes reales indicar el valor sde su mantisa y parte entera.
+            -> Para las constantes reales indicar el valor de su mantisa y parte entera. -- Para Float: strtof(buffer, &sufijo); Para Double: strtod Para Long Double: strtold
             -> Para las constantes carácter, enumerarlas según orden de aparición. 
         * Listado de operadores/caracteres de puntuación indicando cantidad de veces que aparecen.
-        * Listado de comentarios encontrados distinguiendo si se trata de comentarios de una línea o múltiples líneas.
-        * Listado de cadenas y/o caracteres no reconocidos indicando el número de línea donde se encontraron.
+        * Listado de comentarios encontrados distinguiendo si se trata de comentarios de una línea o múltiples líneas. -- Lista de char*.
+        * Listado de cadenas y/o caracteres no reconocidos indicando el número de línea donde se encontraron. -- Lista de char* y long unsigned int
 
     La entrega de este trabajo práctico es obligatoria, su fecha límite para consulta, entrega y revisión es el día Domingo 17 de Julio. Luego de esa fecha, no se aceptarán más trabajos.
     El entorno de programación queda a criterio de cada grupo de trabajo (Eclipse, Dev, Codeblocks, Visual Studio Code ). Se recomienda un IDE que esté integrado con Git para poder realizar el trabajo en equipo de una forma más práctica.
@@ -914,7 +914,7 @@ Trabajo Práctico n° 2 - FLEX para reconocimiento de categorías léxicas de C
                     [^A-Z] (una "clase de caracteres" negada (en este caso cualquier caracter EXCEPTO una letra mayúscula). También emparejará una línea nueva (\n) a menos que \n (o una secuencia de escape equivalente) sea uno de los caracteres presentes explícitamente en la clase de caracteres negada. Sólo puede aparecer al principio de la "clase de caracteres", sino pierde sus propiedades especiales y es tratado como un caracter normal.)
                     [:alnum:] [:alpha:] [:blank:] [:cntrl:] [:digit:] [:graph:] [:lower:] [:print:] [:punct:] [:space:] [:upper:] [:xdigit:] (expresiones de clases de caracteres, son expresiones encerradas entre los delimitadores [: y :] que también deben aparecer entre el [ y el ] de la clase de caracteres, y además pueden darse otros elementos dentro de la clase de caracteres. Por ejemplo, las siguientes ERX son equivalentes: [[:alnum:]] = [[:alpha:][:digit]] = [[:alpha]0-9] = [a-zA-Z0-9])
                 "" (un literal cadena. Dentro de un literal cadena, todos los operadores de ERX pierden su significado especial (incluyendo también a la clase de caracteres []), con excepción del caracter de escape (\).)
-                    "*""\\n"\""qwe" (en este caso reconoce la ER *\nqwe")
+                    "*""\\n"\""{q}?[we].(r)+/$" (en este caso reconoce la ER *\n"{q}?[we].(r)+/$)
                 {nombre} (la expansión de la definición de "nombre" (que debe haber sido definido previamente en la sección de definiciones de FLEX). La ERX para los nombres de las definiciones de FLEX es la misma que la de identificadores de C: [_a-zA-Z][_a-zA-Z0-9]*)
                 . (se corresponde con cualquier caracter (byte) excepto el "línea nueva" (\n))
                 () (se utilizan para agrupar/emparejar una ER y anular la precedencia, por ejemplo: (r(s|t))+ )
@@ -989,18 +989,26 @@ Trabajo Práctico n° 2 - FLEX para reconocimiento de categorías léxicas de C
 
         return 0; es equivalente a yyterminate;
 
-        atof y atoi
 */
 /* Con esta opción la función de análisis int yylex(void); se comporta como si en la sección de usuario existiera la función int yywrap(void) return 1; la cual devuelve verdadero (no-cero), haciendo que una vez que la función de análisis int yylex(void) reciba una indicación de EOF desde YY_INPUT, asuma que no hay nada más para analizar de yyin y finalice (haciendo un return 0;) */
-#line 143 "src/TP2.l"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#line 142 "src/TP2.l"
 #include "funciones.h"
 #define archivo_yyin "archivo.c"
-#define archivo_yyout "yyout.txt"
 
+Reconocido* identificadores = NULL;
+Reconocido* literalesCadena = NULL;
+Reconocido* palabrasReservadas_tiposDeDato = NULL;
+Reconocido* palabrasReservadas_estructurasDeControl = NULL;
+Reconocido* palabrasReservadas_otros = NULL;
+Reconocido* constantesEnterasOctales = NULL;
+Reconocido* constantesEnterasHexadecimales = NULL;
+Reconocido* constantesEnterasDecimales = NULL;
+Reconocido* constantesReales = NULL;
+Reconocido* constantesCaracter = NULL;
+Reconocido* operadoresYCaracteresDePuntuacion = NULL; 
+Reconocido* comentariosDeUnaLinea = NULL;
+Reconocido* comentariosDeMultiplesLineas = NULL;
+NoReconocido* cadenasYCaracteresNoReconocidos = NULL;
 /* Condiciones de arranque inclusivas */
 /* %s */
 /* Condiciones de arranque exclusivas */
@@ -1020,7 +1028,7 @@ Trabajo Práctico n° 2 - FLEX para reconocimiento de categorías léxicas de C
 /* Inicio de la sección de definiciones */
 /* Fin de la sección de definiciones */
 /* Inicio de la sección de reglas */
-#line 1024 "obj/TP2.lex.yy.c"
+#line 1032 "obj/TP2.lex.yy.c"
 
 /* Macros after this point can all be overridden by user definitions in
  * section 1.
@@ -1171,14 +1179,14 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
 
-#line 176 "src/TP2.l"
+#line 183 "src/TP2.l"
 
-    int linea_actual = 1; int columna_actual = 0;
+    long unsigned linea_actual = 1, columna_actual = 0;
     char* buffer;
 
     /* Constantes */
         /* Entera decimal */
-#line 1182 "obj/TP2.lex.yy.c"
+#line 1190 "obj/TP2.lex.yy.c"
 
 	if ( yy_init )
 		{
@@ -1263,345 +1271,345 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 182 "src/TP2.l"
-{columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(constanteEnteraDecimal);}
+#line 189 "src/TP2.l"
+{columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(constanteEnteraDecimal);}
 	YY_BREAK
 
 case YY_STATE_EOF(constanteEnteraDecimal):
-#line 184 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante entera decimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+#line 191 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante entera decimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&constantesEnterasDecimales, buffer); free(buffer); return 0;}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 185 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante entera decimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+#line 192 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante entera decimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&constantesEnterasDecimales, buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 186 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+#line 193 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 
 /* Entera octal */
 case 4:
 YY_RULE_SETUP
-#line 189 "src/TP2.l"
-{columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(constanteEnteraOctal);}
+#line 196 "src/TP2.l"
+{columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(constanteEnteraOctal);}
 	YY_BREAK
 
 case YY_STATE_EOF(constanteEnteraOctal):
-#line 191 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante entera octal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+#line 198 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante entera octal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&constantesEnterasOctales, buffer); free(buffer); return 0;}
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 192 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante entera octal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+#line 199 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante entera octal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&constantesEnterasOctales, buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 193 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+#line 200 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 
 /* Entera hexadecimal */
 case 7:
 YY_RULE_SETUP
-#line 196 "src/TP2.l"
-{columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(constanteEnteraHexa);}
+#line 203 "src/TP2.l"
+{columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(constanteEnteraHexa);}
 	YY_BREAK
 
 case YY_STATE_EOF(constanteEnteraHexa):
-#line 198 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante entera hexadecimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+#line 205 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante entera hexadecimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&constantesEnterasHexadecimales, buffer); free(buffer); return 0;}
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 199 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante entera hexadecimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+#line 206 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante entera hexadecimal: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&constantesEnterasHexadecimales, buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 200 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+#line 207 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 
 /* Real */
 case 10:
 YY_RULE_SETUP
-#line 203 "src/TP2.l"
-{columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(constanteReal);}
+#line 210 "src/TP2.l"
+{columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(constanteReal);}
 	YY_BREAK
 
 case YY_STATE_EOF(constanteReal):
-#line 205 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante real: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+#line 212 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante real: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&constantesReales, buffer); free(buffer); return 0;}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 206 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante real: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+#line 213 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante real: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&constantesReales, buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 207 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+#line 214 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 
 /* Caracter */
 case 13:
 YY_RULE_SETUP
-#line 210 "src/TP2.l"
-{columna_actual += 1; BEGIN(constanteCaracter);}
+#line 217 "src/TP2.l"
+{columna_actual += 1; iniciarCadena(&buffer, yytext); BEGIN(constanteCaracter);}
 	YY_BREAK
 
 case 14:
 YY_RULE_SETUP
-#line 212 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante caracter con secuencia de escape hexadecimal: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+#line 219 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante caracter con secuencia de escape hexadecimal: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarReconocidoEnListaAlFinal(&constantesCaracter, buffer); free(buffer); columna_actual += yyleng; BEGIN(INITIAL);}
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 213 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante caracter con secuencia de escape octal: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+#line 220 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante caracter con secuencia de escape octal: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarReconocidoEnListaAlFinal(&constantesCaracter, buffer); free(buffer); columna_actual += yyleng; BEGIN(INITIAL);}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 214 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante caracter con secuencia de escape simple: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+#line 221 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante caracter con secuencia de escape simple: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarReconocidoEnListaAlFinal(&constantesCaracter, buffer); free(buffer); columna_actual += yyleng; BEGIN(INITIAL);}
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 215 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: constante caracter simple: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+#line 222 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: constante caracter simple: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarReconocidoEnListaAlFinal(&constantesCaracter, buffer); free(buffer); columna_actual += yyleng; BEGIN(INITIAL);}
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 216 "src/TP2.l"
-{printf ("%s:%d:%d: Error lexico: constante caracter invalida: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+#line 223 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error lexico: constante caracter invalida: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); columna_actual += yyleng; BEGIN(INITIAL);}
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 217 "src/TP2.l"
-{printf ("%s:%d:%d: Error sintactico: falta el caracter ' de cierre de la constante caracter: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+#line 224 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error sintactico: falta el caracter ' de cierre de la constante caracter: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); columna_actual += yyleng; BEGIN(INITIAL);}
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 218 "src/TP2.l"
-{printf ("%s:%d:%d: Error sintactico: falta el caracter ' de cierre de la constante caracter: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); linea_actual += yyleng; columna_actual = 0; BEGIN(INITIAL);}
+#line 225 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error sintactico: falta el caracter ' de cierre de la constante caracter: '%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); linea_actual += yyleng; columna_actual = 0; BEGIN(INITIAL);}
 	YY_BREAK
 case YY_STATE_EOF(constanteCaracter):
-#line 219 "src/TP2.l"
-{printf ("%s:%d:%d: Error sintactico: falta el caracter ' de cierre de la constante caracter: ' \n", archivo_yyin, linea_actual, columna_actual - 1); return 1;}
+#line 226 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error sintactico: falta el caracter ' de cierre de la constante caracter: ' \n", archivo_yyin, linea_actual, columna_actual - 1); concatenarCadena (&buffer, yytext); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); return 0;}
 	YY_BREAK
 
 /* Literal cadena */
 case 21:
 YY_RULE_SETUP
-#line 222 "src/TP2.l"
-{columna_actual += 1; BEGIN(literalCadena);}
+#line 229 "src/TP2.l"
+{columna_actual += 1; iniciarCadena(&buffer, yytext); BEGIN(literalCadena);}
 	YY_BREAK
 
 case 22:
 YY_RULE_SETUP
-#line 224 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocido: literal cadena: \"%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+#line 231 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocido: literal cadena: \"%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarReconocidoEnListaPorLongitudAscendenteSiNoEsta(&literalesCadena, buffer); free(buffer); columna_actual += yyleng; BEGIN(INITIAL);}
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 225 "src/TP2.l"
-{printf ("%s:%d:%d: Error lexico: literal cadena invalido: \"%s \n", archivo_yyin, linea_actual, columna_actual, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+#line 232 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error lexico: literal cadena invalido: \"%s \n", archivo_yyin, linea_actual, columna_actual, yytext); concatenarCadena (&buffer, yytext); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); columna_actual += yyleng; BEGIN(INITIAL);}
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 226 "src/TP2.l"
-{printf ("%s:%d:%d: Error sintactico: falta el caracter \" de cierre del literal cadena: \"%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); columna_actual += yyleng; BEGIN(INITIAL);}
+#line 233 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error sintactico: falta el caracter \" de cierre del literal cadena: \"%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); columna_actual += yyleng; BEGIN(INITIAL);}
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 227 "src/TP2.l"
-{printf ("%s:%d:%d: Error sintactico: falta el caracter \" de cierre del literal cadena: \"%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); linea_actual += yyleng; columna_actual = 0; BEGIN(INITIAL);}
+#line 234 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error sintactico: falta el caracter \" de cierre del literal cadena: \"%s \n", archivo_yyin, linea_actual, columna_actual - 1, yytext); concatenarCadena (&buffer, yytext); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); linea_actual += yyleng; columna_actual = 0; BEGIN(INITIAL);}
 	YY_BREAK
 case YY_STATE_EOF(literalCadena):
-#line 228 "src/TP2.l"
-{printf ("%s:%d:%d: Error sintactico: falta el caracter \" de cierre del literal cadena: \" \n", archivo_yyin, linea_actual, columna_actual - 1); return 1;}
+#line 235 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error sintactico: falta el caracter \" de cierre del literal cadena: \" \n", archivo_yyin, linea_actual, columna_actual - 1); concatenarCadena (&buffer, yytext); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); return 0;}
 	YY_BREAK
 
 /* Palabras reservadas */
 /* Tipo de dato */
 case 26:
 YY_RULE_SETUP
-#line 232 "src/TP2.l"
-{columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(palabraReservada_tipoDeDato);}
+#line 239 "src/TP2.l"
+{columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(palabraReservada_tipoDeDato);}
 	YY_BREAK
 
 case YY_STATE_EOF(palabraReservada_tipoDeDato):
-#line 234 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: palabra reservada (tipos de dato): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+#line 241 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: palabra reservada (tipos de dato): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&palabrasReservadas_tiposDeDato, buffer); free(buffer); return 0;}
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 235 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: palabra reservada (tipos de dato): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+#line 242 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: palabra reservada (tipos de dato): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&palabrasReservadas_tiposDeDato, buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 236 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+#line 243 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 
 /* Estructuras de control */
 case 29:
 YY_RULE_SETUP
-#line 239 "src/TP2.l"
-{columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(palabraReservada_estructuraDeControl);}
+#line 246 "src/TP2.l"
+{columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(palabraReservada_estructuraDeControl);}
 	YY_BREAK
 
 case YY_STATE_EOF(palabraReservada_estructuraDeControl):
-#line 241 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: palabra reservada (estructuras de control): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+#line 248 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: palabra reservada (estructuras de control): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&palabrasReservadas_estructurasDeControl, buffer); free(buffer); return 0;}
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 242 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: palabra reservada (estructuras de control): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+#line 249 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: palabra reservada (estructuras de control): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&palabrasReservadas_estructurasDeControl, buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 243 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+#line 250 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 
 /* Otros */
 case 32:
 YY_RULE_SETUP
-#line 246 "src/TP2.l"
-{columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(palabraReservada_otro);}
+#line 253 "src/TP2.l"
+{columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(palabraReservada_otro);}
 	YY_BREAK
 
 case YY_STATE_EOF(palabraReservada_otro):
-#line 248 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: palabra reservada (otros): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+#line 255 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: palabra reservada (otros): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&palabrasReservadas_otros, buffer); free(buffer); return 0;}
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 249 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocida: palabra reservada (otros): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+#line 256 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocida: palabra reservada (otros): %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaAlFinal(&palabrasReservadas_otros, buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 250 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+#line 257 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 
 /* Identificadores */
 case 35:
 YY_RULE_SETUP
-#line 253 "src/TP2.l"
-{columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(identificador);}
+#line 260 "src/TP2.l"
+{columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(identificador);}
 	YY_BREAK
 
 case YY_STATE_EOF(identificador):
-#line 255 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocido: identificador: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 0;}
+#line 262 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocido: identificador: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaSegunOrdenAlfabetico(&identificadores, buffer); free(buffer); return 0;}
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 256 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocido: identificador: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+#line 263 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocido: identificador: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarReconocidoEnListaSegunOrdenAlfabetico(&identificadores, buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 257 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+#line 264 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 
 /* Caracteres de puntuación/operadores de C */
 case 38:
 YY_RULE_SETUP
-#line 260 "src/TP2.l"
-{printf ("%s:%d:%d: Reconocido: caracter de puntuacion/operador de C: %s \n", archivo_yyin, linea_actual, columna_actual, yytext); columna_actual += yyleng;}
+#line 267 "src/TP2.l"
+{printf ("%s:%lu:%lu: Reconocido: caracter de puntuacion/operador de C: %s \n", archivo_yyin, linea_actual, columna_actual, yytext); columna_actual += yyleng; insertarReconocidoEnListaAlFinal(&operadoresYCaracteresDePuntuacion, yytext);}
 	YY_BREAK
 /* Comentarios */
 /* Comentarios de una línea */
 case 39:
 YY_RULE_SETUP
-#line 263 "src/TP2.l"
-{printf("%s:%d:%d: Reconocido: comentario de una linea: %s \n", archivo_yyin, linea_actual, columna_actual, yytext);}
+#line 270 "src/TP2.l"
+{printf("%s:%lu:%lu: Reconocido: comentario de una linea: %s \n", archivo_yyin, linea_actual, columna_actual, yytext); insertarReconocidoEnListaAlFinal(&comentariosDeUnaLinea, yytext);}
 	YY_BREAK
 /* Comentarios de múltiples líneas */
 case 40:
 YY_RULE_SETUP
-#line 265 "src/TP2.l"
-{printf ("%s:%d:%d: ", archivo_yyin, linea_actual, columna_actual); columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(comentarioDeMultiplesLineas);}
+#line 272 "src/TP2.l"
+{printf ("%s:%lu:%lu: ", archivo_yyin, linea_actual, columna_actual); columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(comentarioDeMultiplesLineas);}
 	YY_BREAK
 
 case 41:
 YY_RULE_SETUP
-#line 267 "src/TP2.l"
-{columna_actual += yyleng; concatenarString(&buffer, yytext);}
+#line 274 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena(&buffer, yytext);}
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 268 "src/TP2.l"
-{columna_actual += yyleng; concatenarString(&buffer, yytext);}
+#line 275 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena(&buffer, yytext);}
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 269 "src/TP2.l"
-{linea_actual += yyleng; columna_actual = 0; concatenarString(&buffer, yytext);}
+#line 276 "src/TP2.l"
+{linea_actual += yyleng; columna_actual = 0; concatenarCadena(&buffer, yytext);}
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 270 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf("Reconocido: comentario de multiples lineas: %s \n", buffer); free(buffer); BEGIN(INITIAL);}
+#line 277 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf("Reconocido: comentario de multiples lineas: %s \n", buffer); insertarReconocidoEnListaAlFinal(&comentariosDeMultiplesLineas, buffer); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 case YY_STATE_EOF(comentarioDeMultiplesLineas):
-#line 271 "src/TP2.l"
-{printf ("Error sintactico (para el preprocesamiento): comentario multilinea sin terminar: %s \n", buffer); free(buffer); return 1;}
+#line 278 "src/TP2.l"
+{printf ("Error sintactico (para el preprocesamiento): comentario multilinea sin terminar: %s \n", buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); return 0;}
 	YY_BREAK
 
 case 45:
 YY_RULE_SETUP
-#line 274 "src/TP2.l"
-{columna_actual += yyleng; inicializarString(&buffer, yytext); BEGIN(tokenNoReconocido);}
+#line 281 "src/TP2.l"
+{columna_actual += yyleng; iniciarCadena(&buffer, yytext); BEGIN(tokenNoReconocido);}
 	YY_BREAK
 
 case YY_STATE_EOF(tokenNoReconocido):
-#line 276 "src/TP2.l"
-{printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); return 1;}
+#line 283 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); return 0;}
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 277 "src/TP2.l"
-{printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); yyless(0); BEGIN(INITIAL);}
+#line 284 "src/TP2.l"
+{printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); yyless(0); BEGIN(INITIAL);}
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 278 "src/TP2.l"
-{columna_actual += yyleng; concatenarString (&buffer, yytext); printf ("%s:%d:%d: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); free(buffer); BEGIN(INITIAL);}
+#line 285 "src/TP2.l"
+{columna_actual += yyleng; concatenarCadena (&buffer, yytext); printf ("%s:%lu:%lu: Error lexico: token no reconocido: %s \n", archivo_yyin, linea_actual, columna_actual - strlen(buffer), buffer); insertarNoReconocidoEnListaAlFinal(&cadenasYCaracteresNoReconocidos, buffer, linea_actual); free(buffer); BEGIN(INITIAL);}
 	YY_BREAK
 
 case 48:
 YY_RULE_SETUP
-#line 280 "src/TP2.l"
+#line 287 "src/TP2.l"
 {columna_actual += yyleng;}
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 281 "src/TP2.l"
+#line 288 "src/TP2.l"
 {linea_actual += yyleng; columna_actual = 0;}
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 282 "src/TP2.l"
+#line 289 "src/TP2.l"
 return 0;
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 284 "src/TP2.l"
+#line 291 "src/TP2.l"
 ECHO;
 	YY_BREAK
-#line 1605 "obj/TP2.lex.yy.c"
+#line 1613 "obj/TP2.lex.yy.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2485,34 +2493,37 @@ int main()
 	return 0;
 	}
 #endif
-#line 284 "src/TP2.l"
+#line 291 "src/TP2.l"
 
 /* Fin de la sección de reglas */
 
 /* Inicio de la sección de código de usuario */
 
 int main() {
-    printf("\n========================= [ FLEX ] =========================\n\n");
+    printf("\n============================== [ FLEX ] ==============================\n\n");
     yyin = fopen(archivo_yyin, "r");
-    yyout = fopen(archivo_yyout, "w");	
     yylex();
     fclose(yyin);
-    fclose(yyout);
-    printf("\n========================= [ Terminado ] =========================\n\n");
-    printf("\n========================= [ Reporte ] =========================\n\n");
-    printf("* Listado de identificadores encontrados:\n");
-    printf("* Listado de literales cadena encontrados:\n");
-    printf("* Listado de palabras reservadas por orden de aparicion:\n");
-    printf("* Listado de constantes enteras octales:\n");
-    printf("* Listado de constantes enteras hexadecimales:\n");
-    printf("* Listado de constantes enteras decimales:\n");
-    printf("* Listado de constantes reales:\n");
-    printf("* Listado de constantes caracter:\n");
-    printf("* Listado de operadores/caracteres de puntuacion:\n");
-    printf("* Listado de comentarios:\n");
-    printf("* Listado de cadenas y/o caracteres no reconocidos:\n");
-    printf("\n========================= [ Terminado ] =========================\n\n");
-	system("pause");
+    printf("\n============================== [ Terminado ] ==============================\n\n");
+
+    printf("\n============================== [ Reporte ] ==============================\n");
+    printf("\n* Listado de identificadores encontrados:\n"); reportarAparicionesSucesivasEnListaDeReconocidos(identificadores); liberarListaDeReconocidos(identificadores);
+    printf("\n* Listado de literales cadena encontrados:\n"); reportarLongitudesEnListaDeReconocidos(literalesCadena); liberarListaDeReconocidos(literalesCadena);
+    printf("\n* Listado de palabras reservadas (tipos de dato):\n"); reportarListaDeReconocidos(palabrasReservadas_tiposDeDato); liberarListaDeReconocidos(palabrasReservadas_tiposDeDato);
+    printf("\n* Listado de palabras reservadas (estructuras de control):\n"); reportarListaDeReconocidos(palabrasReservadas_estructurasDeControl); liberarListaDeReconocidos(palabrasReservadas_estructurasDeControl);
+    printf("\n* Listado de palabras reservadas (otros):\n"); reportarListaDeReconocidos(palabrasReservadas_otros); liberarListaDeReconocidos(palabrasReservadas_otros);
+    printf("\n* Listado de constantes enteras octales:\n"); reportarConversionesADecimalEnListaDeReconocidos(constantesEnterasOctales); liberarListaDeReconocidos(constantesEnterasOctales);
+    printf("\n* Listado de constantes enteras hexadecimales:\n"); reportarConversionesADecimalEnListaDeReconocidos(constantesEnterasHexadecimales); liberarListaDeReconocidos(constantesEnterasHexadecimales);
+    printf("\n* Listado de constantes enteras decimales:\n"); reportarSumatoriaDeConstantesEnterasDecimalesDeListaDeReconocidos(constantesEnterasDecimales); liberarListaDeReconocidos(constantesEnterasDecimales);
+    printf("\n* Listado de constantes reales:\n"); reportarMantisasYParteEnterasEnListaDeReconocidos(constantesReales); liberarListaDeReconocidos(constantesReales);
+    printf("\n* Listado de constantes caracter:\n"); reportarEnumerandoListaDeReconocidos(constantesCaracter); liberarListaDeReconocidos(constantesCaracter);
+    printf("\n* Listado de operadores/caracteres de puntuacion:\n"); reportarCantidadDeCadaOperadorYCaracterDePuntuacionEnListaDeReconocidos(operadoresYCaracteresDePuntuacion); liberarListaDeReconocidos(operadoresYCaracteresDePuntuacion);
+    printf("\n* Listado de comentarios de una linea:\n"); reportarListaDeReconocidos(comentariosDeUnaLinea); liberarListaDeReconocidos(comentariosDeUnaLinea);
+    printf("\n* Listado de comentarios de multiples lineas:\n"); reportarListaDeReconocidos(comentariosDeMultiplesLineas); liberarListaDeReconocidos(comentariosDeMultiplesLineas);
+    printf("\n* Listado de cadenas y/o caracteres no reconocidos:\n"); reportarListaDeNoReconocidos(cadenasYCaracteresNoReconocidos); liberarListaDeNoReconocidos(cadenasYCaracteresNoReconocidos);
+    printf("\n============================== [ Terminado ] ==============================\n\n");
+
+    pausa();
     return 0;
 }
 
